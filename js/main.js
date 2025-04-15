@@ -12,14 +12,14 @@
     };
 
     const products = [
-        { id: 1, name: "Casual T-Shirt", price: 29.99, image: "img/product-1.jpg", rating: 5, category: "shirts", description: "A comfortable casual t-shirt perfect for everyday wear." },
-        { id: 2, name: "Denim Jacket", price: 59.99, image: "img/product-2.jpg", rating: 4.5, category: "jackets", description: "Stylish denim jacket for a trendy look." },
-        { id: 3, name: "Summer Dress", price: 39.99, image: "img/product-3.jpg", rating: 3.5, category: "dresses", description: "Light and breezy summer dress for warm days." },
-        { id: 4, name: "Leather Shoes", price: 79.99, image: "img/product-4.jpg", rating: 2, category: "shoes", description: "Elegant leather shoes for formal occasions." },
-        { id: 5, name: "Sports Hoodie", price: 49.99, image: "img/product-5.jpg", rating: 5, category: "sportswear", description: "Cozy hoodie ideal for workouts or casual outings." },
-        { id: 6, name: "Winter Coat", price: 99.99, image: "img/product-6.jpg", rating: 4.5, category: "jackets", description: "Warm winter coat to keep you cozy." },
-        { id: 7, name: "Formal Shirt", price: 34.99, image: "img/product-7.jpg", rating: 3.5, category: "shirts", description: "Crisp formal shirt for professional settings." },
-        { id: 8, name: "Sneakers", price: 69.99, image: "img/product-8.jpg", rating: 2, category: "shoes", description: "Comfortable sneakers for daily use." },
+        { id: 1, name: "Nikon-camera", price: 25000.99, image: "img/product-1.jpg", rating: 5, category: "devices", description: "A comfortable camera with every shot you take." },
+        { id: 2, name: "Blue Jacket", price: 1500.99, image: "img/product-2.jpg", rating: 4.5, category: "jackets", description: "Stylish denim jacket for a trendy look." },
+        { id: 3, name: "stand Lamp", price: 1200.99, image: "img/product-3.jpg", rating: 3.5, category: "lightings", description: "Lighten your world." },
+        { id: 4, name: "black Sneakers", price: 2500.99, image: "img/product-4.jpg", rating: 2, category: "shoes", description: "Elegant sneakers shoes for formal occasions." },
+        { id: 5, name: "Drone ", price: 100000.99, image: "img/product-5.jpg", rating: 5, category: "devices", description: "Aero stylish pic Cozy why not ." },
+        { id: 6, name: "smart watch", price: 3095.99, image: "img/product-6.jpg", rating: 4.5, category: "devices", description: "let everysecond count." },
+        { id: 7, name: "Formal Shirt", price: 3704.99, image: "img/product-7.jpg", rating: 3.5, category: "shirts", description: "Crisp formal shirt for professional settings." },
+        { id: 8, name: "beauty cream", price: 569.99, image: "img/product-8.jpg", rating: 2, category: "beauty", description: "Protect your skin smoothening." },
         { id: 9, name: "Chinos Pants", price: 44.99, image: "img/product-9.jpg", rating: 2, category: "jeans", description: "Versatile chinos for a smart-casual look." }
     ];
 
