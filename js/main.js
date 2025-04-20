@@ -23,7 +23,7 @@
         { id: 6, name: "Smart Watch", price: 3095, image: "img/product-6.jpg", rating: 4.5, category: "devices", description: "Track every second with style." },
         { id: 7, name: "Formal Shirt", price: 3704, image: "img/product-7.jpg", rating: 3.5, category: "shirts", description: "Crisp shirt for professional settings." },
         { id: 8, name: "Beauty Cream", price: 569, image: "img/product-8.jpg", rating: 2, category: "accessories", description: "Smoothens and protects your skin." },
-        { id: 9, name: "Chinos", price: 1444, image: "img/product-9.jpg", rating: 2, category: "accessories", description: "Versatile chinos for a smart-casual look." }
+        { id: 9, name: "Chinos", price: 1444, image: "img/product-9.jpg", rating: 2, category: "accessories", description: "Versatile chinos for a comfy seat." }
     ];
 
     // Utility: Debounce a function to limit execution rate
