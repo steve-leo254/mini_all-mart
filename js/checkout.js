@@ -3,7 +3,7 @@
 
     // Configuration constants (aligned with main.js and cart.js)
     const CONFIG = {
-        CURRENCY: '$',
+        CURRENCY: 'ksh',
         renderDelay: 100,
         shippingCost: 10
     };

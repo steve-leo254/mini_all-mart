@@ -3,7 +3,7 @@
 
     // Configuration constants (aligned with main.js)
     const CONFIG = {
-        CURRENCY: '$',
+        CURRENCY: 'ksh',
         renderDelay: 100,
         defaultPrice: 99.99,
         defaultImage: 'img/product-1.jpg',
