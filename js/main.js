@@ -3,17 +3,19 @@
 
     // Configuration constants
     const CONFIG = {
-        CURRENCY: 'ksh',
+        CURRENCY: 'KSH',
+        LOCALE: 'en-KE',
         navbarBreakpoint: 992,
         backToTopOffset: 100,
         scrollTopSpeed: 1500,
         scrollThrottleDelay: 150,
         resizeDebounceDelay: 250,
         carouselMargin: 29,
-        renderDelay: 100
+        renderDelay: 100,
+        maxCartItems: 50
     };
 
-    // Product data
+    // Product data (to be replaced with API call in production)
     const products = [
         { id: 1, name: "Nikon Camera", price: 25000, image: "img/product-1.jpg", rating: 5, category: "devices", description: "A comfortable camera for every shot." },
         { id: 2, name: "Blue Jacket", price: 1500, image: "img/product-2.jpg", rating: 4.5, category: "jackets", description: "Stylish denim jacket for a trendy look." },
@@ -26,7 +28,7 @@
         { id: 9, name: "Chinos", price: 1444, image: "img/product-9.jpg", rating: 2, category: "accessories", description: "Versatile chinos for a comfy seat." }
     ];
 
-    // Utility: Debounce a function to limit execution rate
+    // Utility: Debounce a function
     const debounce = (func, wait, immediate) => {
         let timeout;
         return function () {
@@ -42,7 +44,7 @@
         };
     };
 
-    // Utility: Throttle a function to limit execution frequency
+    // Utility: Throttle a function
     const throttle = (func, limit) => {
         let inThrottle;
         return function () {
@@ -53,6 +55,36 @@
                 setTimeout(() => inThrottle = false, limit);
             }
         };
+    };
+
+    // Utility: Format currency
+    const formatCurrency = (amount) => {
+        return new Intl.NumberFormat(CONFIG.LOCALE, {
+            style: 'currency',
+            currency: CONFIG.CURRENCY
+        }).format(amount);
+    };
+
+    // Utility: Sanitize input
+    const sanitizeInput = (input) => {
+        if (typeof input !== 'string') return '';
+        const div = document.createElement('div');
+        div.textContent = input;
+        return div.innerHTML.replace(/[<>]/g, '');
+    };
+
+    // Utility: Check storage availability
+    const isStorageAvailable = (type) => {
+        try {
+            const storage = window[type];
+            const test = '__storage_test__';
+            storage.setItem(test, test);
+            storage.removeItem(test);
+            return true;
+        } catch (e) {
+            console.warn(`${type} is not available:`, e);
+            return false;
+        }
     };
 
     // Parse URL query parameters
@@ -67,7 +99,7 @@
         };
     };
 
-    // Filter products based on URL parameters
+    // Filter products
     const filterProducts = () => {
         const { category, price, search, sort } = getUrlParams();
         let filtered = [...products];
@@ -98,38 +130,40 @@
         return filtered;
     };
 
-    // Update cart badge with total items
+    // Update cart badge
     const updateCartBadge = () => {
         try {
             const cart = JSON.parse(localStorage.getItem('cart') || '[]');
             const totalItems = cart.reduce((sum, item) => sum + (item.quantity || 0), 0);
-            $('.fas.fa-shopping-cart').next('.badge').text(totalItems);
+            document.querySelectorAll('.fas.fa-shopping-cart + .badge').forEach(badge => {
+                badge.textContent = totalItems;
+            });
         } catch (e) {
             console.error('Failed to update cart badge:', e);
+            alert('Unable to update cart. Please try again later.');
         }
     };
 
-    // Sanitize input to prevent XSS
-    const sanitizeInput = (input) => {
-        const div = document.createElement('div');
-        div.textContent = input;
-        return div.innerHTML;
-    };
-
-    // Validate and repair cart data
+    // Validate and repair cart
     const validateAndRepairCart = () => {
+        if (!isStorageAvailable('localStorage')) {
+            alert('Local storage is not available. Cart functionality may be limited.');
+            return [];
+        }
+
         try {
             let cart = JSON.parse(localStorage.getItem('cart') || '[]');
-            cart = cart.map((item, index) => {
+            cart = cart.slice(0, CONFIG.maxCartItems).map((item, index) => {
                 if (!item || typeof item.id === 'undefined') {
                     console.warn(`Removing invalid cart item at index ${index}:`, item);
                     return null;
                 }
+                const product = products.find(p => p.id === item.id);
                 return {
                     id: item.id,
-                    name: item.name || `Product ${item.id}`,
-                    price: Number.isFinite(item.price) && item.price > 0 ? item.price : 10000,
-                    image: item.image || 'img/product-1.jpg',
+                    name: product ? product.name : item.name || `Product ${item.id}`,
+                    price: product ? product.price : (Number.isFinite(item.price) && item.price > 0 ? item.price : 10000),
+                    image: product ? product.image : item.image || 'img/product-1.jpg',
                     quantity: Math.max(1, Math.floor(item.quantity || 1)),
                     size: item.size || 'M',
                     color: item.color || 'Black'
@@ -141,6 +175,7 @@
         } catch (e) {
             console.error('Failed to validate cart:', e);
             localStorage.setItem('cart', '[]');
+            alert('Cart data corrupted. Resetting cart.');
             return [];
         }
     };
@@ -150,124 +185,126 @@
         const fullStars = Math.floor(rating);
         const halfStar = rating % 1 >= 0.5 ? 1 : 0;
         const emptyStars = 5 - fullStars - halfStar;
-        return (
-            '<small class="fas fa-star text-primary mr-1"></small>'.repeat(fullStars) +
-            (halfStar ? '<small class="fas fa-star-half-alt text-primary mr-1"></small>' : '') +
-            '<small class="far fa-star text-primary mr-1"></small>'.repeat(emptyStars)
-        );
+        return `
+            ${'<small class="fas fa-star text-primary mr-1" aria-hidden="true"></small>'.repeat(fullStars)}
+            ${halfStar ? '<small class="fas fa-star-half-alt text-primary mr-1" aria-hidden="true"></small>' : ''}
+            ${'<small class="far fa-star text-primary mr-1" aria-hidden="true"></small>'.repeat(emptyStars)}
+            <span class="sr-only">Rating: ${rating} out of 5</span>
+        `;
     };
 
-    // Render products to a container
+    // Render products
     const renderProducts = (containerId, productList) => {
-        const $container = $(`#${containerId}`);
-        $container.empty();
+        const container = document.getElementById(containerId);
+        if (!container) return;
 
-        if (!productList.length) {
-            $container.html('<div class="col-12 text-center">No products found.</div>');
-            return;
-        }
+        container.innerHTML = productList.length ? '' : '<div class="col-12 text-center" role="alert">No products found.</div>';
 
-        const fragment = document.createDocumentFragment();
-        productList.forEach(product => {
-            const $item = $(`
-                <div class="col-lg-4 col-md-6 col-sm-6 pb-1">
-                    <div class="product-item bg-light mb-4">
-                        <div class="product-img position-relative overflow-hidden">
-                            <img class="img-fluid w-100" src="${product.image}" alt="${sanitizeInput(product.name)}">
-                            <div class="product-action">
-                                <a class="btn btn-outline-dark btn-square add-to-cart" href="#" data-id="${product.id}"><i class="fa fa-shopping-cart"></i></a>
-                                <a class="btn btn-outline-dark btn-square" href="wishlist.html"><i class="far fa-heart"></i></a>
-                                <a class="btn btn-outline-dark btn-square" href="detail.html?id=${product.id}"><i class="fa fa-search"></i></a>
-                            </div>
+        const html = productList.map(product => `
+            <div class="col-lg-4 col-md-6 col-sm-6 pb-1">
+                <div class="product-item bg-light mb-4" role="article">
+                    <div class="product-img position-relative overflow-hidden">
+                        <img class="img-fluid w-100" src="${product.image}" alt="${sanitizeInput(product.name)}">
+                        <div class="product-action">
+                            <button class="btn btn-outline-dark btn-square add-to-cart" data-id="${product.id}" aria-label="Add ${sanitizeInput(product.name)} to cart"><i class="fa fa-shopping-cart"></i></button>
+                            <a class="btn btn-outline-dark btn-square" href="wishlist.html" aria-label="Add ${sanitizeInput(product.name)} to wishlist"><i class="far fa-heart"></i></a>
+                            <a class="btn btn-outline-dark btn-square" href="detail.html?id=${product.id}" aria-label="View ${sanitizeInput(product.name)} details"><i class="fa fa-search"></i></a>
                         </div>
-                        <div class="text-center py-4">
-                            <a class="h6 text-decoration-none text-truncate" href="detail.html?id=${product.id}">${sanitizeInput(product.name)}</a>
-                            <div class="d-flex align-items-center justify-content-center mt-2">
-                                <h5>${CONFIG.CURRENCY}${product.price.toFixed(2)}</h5>
-                            </div>
-                            <div class="d-flex align-items-center justify-content-center mb-1">
-                                ${generateStarRating(product.rating)}
-                                <small>(${product.rating})</small>
-                            </div>
+                    </div>
+                    <div class="text-center py-4">
+                        <a class="h6 text-decoration-none text-truncate" href="detail.html?id=${product.id}">${sanitizeInput(product.name)}</a>
+                        <div class="d-flex align-items-center justify-content-center mt-2">
+                            <h5>${formatCurrency(product.price)}</h5>
+                        </div>
+                        <div class="d-flex align-items-center justify-content-center mb-1">
+                            ${generateStarRating(product.rating)}
+                            <small>(${product.rating})</small>
                         </div>
                     </div>
                 </div>
-            `);
-            fragment.appendChild($item[0]);
-        });
-        $container[0].appendChild(fragment);
+            </div>
+        `).join('');
+        container.insertAdjacentHTML('beforeend', html);
     };
 
     // Render product details
     const renderProductDetails = (product) => {
-        $('#product-name').text(sanitizeInput(product.name));
-        $('#product-price').text(`${CONFIG.CURRENCY}${product.price.toFixed(2)}`);
-        $('#main-image').attr({ src: product.image, alt: sanitizeInput(product.name) });
-        $('#product-description').text(sanitizeInput(product.description));
-        $('#description-tab').text(sanitizeInput(product.description));
-        $('#review-product-name').text(sanitizeInput(product.name));
-        $('#product-rating').html(generateStarRating(product.rating));
+        document.getElementById('product-name').textContent = sanitizeInput(product.name);
+        document.getElementById('product-price').textContent = formatCurrency(product.price);
+        const mainImage = document.getElementById('main-image');
+        mainImage.src = product.image;
+        mainImage.alt = sanitizeInput(product.name);
+        document.getElementById('product-description').textContent = sanitizeInput(product.description);
+        document.getElementById('description-tab').textContent = sanitizeInput(product.description);
+        document.getElementById('review-product-name').textContent = sanitizeInput(product.name);
+        document.getElementById('product-rating').innerHTML = generateStarRating(product.rating);
     };
 
     // Render product carousel
     const renderProductCarousel = (product, relatedProducts) => {
-        const $carousel = $('.carousel-inner');
-        $carousel.empty();
+        const carousel = document.querySelector('.carousel-inner');
+        if (!carousel) return;
+
         const images = [product.image, ...relatedProducts.map(p => p.image)];
-        const fragment = document.createDocumentFragment();
-        images.forEach((img, index) => {
-            const $item = $(`
-                <div class="carousel-item ${index === 0 ? 'active' : ''}">
-                    <img class="w-100 h-100" src="${img}" alt="${index === 0 ? sanitizeInput(product.name) : 'Related Product'}">
-                </div>
-            `);
-            fragment.appendChild($item[0]);
-        });
-        $carousel[0].appendChild(fragment);
+        carousel.innerHTML = images.map((img, index) => `
+            <div class="carousel-item ${index === 0 ? 'active' : ''}">
+                <img class="w-100 h-100" src="${img}" alt="${index === 0 ? sanitizeInput(product.name) : 'Related Product'}">
+            </div>
+        `).join('');
     };
 
     // Render related products
     const renderRelatedProducts = (relatedProducts) => {
-        const $container = $('#related-products');
-        $container.empty();
-        const fragment = document.createDocumentFragment();
-        relatedProducts.forEach(p => {
-            const $item = $(`
-                <div class="product-item bg-light">
-                    <div class="product-img position-relative overflow-hidden">
-                        <img class="img-fluid w-100" src="${p.image}" alt="${sanitizeInput(p.name)}">
-                        <div class="product-action">
-                            <a class="btn btn-outline-dark btn-square add-to-cart" href="#" data-id="${p.id}"><i class="fa fa-shopping-cart"></i></a>
-                            <a class="btn btn-outline-dark btn-square" href="wishlist.html"><i class="far fa-heart"></i></a>
-                            <a class="btn btn-outline-dark btn-square" href="detail.html?id=${p.id}"><i class="fa fa-search"></i></a>
-                        </div>
-                    </div>
-                    <div class="text-center py-4">
-                        <a class="h6 text-decoration-none text-truncate" href="detail.html?id=${p.id}">${sanitizeInput(p.name)}</a>
-                        <div class="d-flex align-items-center justify-content-center mt-2">
-                            <h5>${CONFIG.CURRENCY}${p.price.toFixed(2)}</h5>
-                        </div>
-                        <div class="d-flex align-items-center justify-content-center mb-1">
-                            ${generateStarRating(p.rating)}
-                            <small>(${p.rating})</small>
-                        </div>
+        const container = document.getElementById('related-products');
+        if (!container) return;
+
+        container.innerHTML = relatedProducts.map(p => `
+            <div class="product-item bg-light" role="article">
+                <div class="product-img position-relative overflow-hidden">
+                    <img class="img-fluid w-100" src="${p.image}" alt="${sanitizeInput(p.name)}">
+                    <div class="product-action">
+                        <button class="btn btn-outline-dark btn-square add-to-cart" data-id="${p.id}" aria-label="Add ${sanitizeInput(p.name)} to cart"><i class="fa fa-shopping-cart"></i></button>
+                        <a class="btn btn-outline-dark btn-square" href="wishlist.html" aria-label="Add ${sanitizeInput(p.name)} to wishlist"><i class="far fa-heart"></i></a>
+                        <a class="btn btn-outline-dark btn-square" href="detail.html?id=${p.id}" aria-label="View ${sanitizeInput(p.name)} details"><i class="fa fa-search"></i></a>
                     </div>
                 </div>
-            `);
-            fragment.appendChild($item[0]);
-        });
-        $container[0].appendChild(fragment);
+                <div class="text-center py-4">
+                    <a class="h6 text-decoration-none text-truncate" href="detail.html?id=${p.id}">${sanitizeInput(p.name)}</a>
+                    <div class="d-flex align-items-center justify-content-center mt-2">
+                        <h5>${formatCurrency(p.price)}</h5>
+                    </div>
+                    <div class="d-flex align-items-center justify-content-center mb-1">
+                        ${generateStarRating(p.rating)}
+                        <small>(${p.rating})</small>
+                    </div>
+                </div>
+            </div>
+        `).join('');
 
+        // Destroy existing carousel to prevent memory leaks
+        if ($('.related-carousel').hasClass('owl-loaded')) {
+            $('.related-carousel').trigger('destroy.owl.carousel').removeClass('owl-carousel owl-loaded');
+            $('.related-carousel').find('.owl-stage-outer').children().unwrap();
+        }
+
+        // Initialize Owl Carousel with accessibility
         $('.related-carousel').owlCarousel({
-            loop: true,
+            loop: relatedProducts.length > 1,
             margin: CONFIG.carouselMargin,
             nav: true,
+            navText: [
+                '<i class="fa fa-angle-left" aria-hidden="true"></i><span class="sr-only">Previous</span>',
+                '<i class="fa fa-angle-right" aria-hidden="true"></i><span class="sr-only">Next</span>'
+            ],
             autoplay: true,
             smartSpeed: 1000,
             responsive: {
                 0: { items: 1 },
-                600: { items: 3 },
-                1000: { items: 4 }
+                600: { items: 2 },
+                1000: { items: 3 }
+            },
+            onInitialized: function () {
+                $('.related-carousel').attr('role', 'region').attr('aria-label', 'Related Products Carousel');
             }
         });
     };
@@ -276,7 +313,7 @@
     const renderDetailPage = () => {
         const { id } = getUrlParams();
         const product = products.find(p => p.id === id) || products[0];
-        const relatedProducts = products.filter(p => p.id !== product.id).sort(() => Math.random() - 0.5).slice(0, 3);
+        const relatedProducts = products.filter(p => p.id !== product.id && p.category === product.category).slice(0, 3);
 
         renderProductDetails(product);
         renderProductCarousel(product, relatedProducts);
@@ -297,10 +334,10 @@
 
         if (!cart.length) {
             $productsContainer.append('<p>Your cart is empty. <a href="shop.html">Shop now</a>.</p>');
-            $subtotal.text(`${CONFIG.CURRENCY}0.00`);
-            $shipping.text(`${CONFIG.CURRENCY}0.00`);
-            $discount.text(`${CONFIG.CURRENCY}0.00`);
-            $total.text(`${CONFIG.CURRENCY}0.00`);
+            $subtotal.text(formatCurrency(0));
+            $shipping.text(formatCurrency(0));
+            $discount.text(formatCurrency(0));
+            $total.text(formatCurrency(0));
             return;
         }
 
@@ -311,7 +348,7 @@
             const $item = $(`
                 <div class="d-flex justify-content-between">
                     <p>${sanitizeInput(item.name)} (${sanitizeInput(item.size)}, ${sanitizeInput(item.color)}, Qty: ${item.quantity})</p>
-                    <p>${CONFIG.CURRENCY}${itemTotal.toFixed(2)}</p>
+                    <p>${formatCurrency(itemTotal)}</p>
                 </div>
             `);
             fragment.appendChild($item[0]);
@@ -322,10 +359,10 @@
         const couponDiscount = parseFloat(localStorage.getItem('couponDiscount')) || 0;
         const total = Math.max(0, subtotal + shipping - couponDiscount);
 
-        $subtotal.text(`${CONFIG.CURRENCY}${subtotal.toFixed(2)}`);
-        $shipping.text(`${CONFIG.CURRENCY}${shipping.toFixed(2)}`);
-        $discount.text(`${CONFIG.CURRENCY}${couponDiscount.toFixed(2)}`);
-        $total.text(`${CONFIG.CURRENCY}${total.toFixed(2)}`);
+        $subtotal.text(formatCurrency(subtotal));
+        $shipping.text(formatCurrency(shipping));
+        $discount.text(formatCurrency(couponDiscount));
+        $total.text(formatCurrency(total));
     };
 
     // Validate checkout form
@@ -343,19 +380,29 @@
 
         const errors = [];
         requiredFields.forEach(field => {
-            if (!$(`#${field.id}`).val().trim()) {
+            const value = $(`#${field.id}`).val().trim();
+            if (!value) {
                 errors.push(`${field.name} is required.`);
+                $(`#${field.id}`).addClass('is-invalid');
+            } else {
+                $(`#${field.id}`).removeClass('is-invalid');
             }
         });
 
         const email = $('#billing-email').val().trim();
         if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
             errors.push('Please enter a valid email address.');
+            $('#billing-email').addClass('is-invalid');
+        } else {
+            $('#billing-email').removeClass('is-invalid');
         }
 
         const mobile = $('#billing-mobile').val().trim();
         if (mobile && !/^\+?\d{10,15}$/.test(mobile)) {
             errors.push('Please enter a valid mobile number (10-15 digits).');
+            $('#billing-mobile').addClass('is-invalid');
+        } else {
+            $('#billing-mobile').removeClass('is-invalid');
         }
 
         if ($('#shipto').is(':checked')) {
@@ -370,24 +417,37 @@
             ];
 
             shippingFields.forEach(field => {
-                if (!$(`#${field.id}`).val().trim()) {
+                const value = $(`#${field.id}`).val().trim();
+                if (!value) {
                     errors.push(`${field.name} is required.`);
+                    $(`#${field.id}`).addClass('is-invalid');
+                } else {
+                    $(`#${field.id}`).removeClass('is-invalid');
                 }
             });
 
             const shippingEmail = $('#shipping-email').val().trim();
             if (shippingEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(shippingEmail)) {
                 errors.push('Please enter a valid shipping email address.');
+                $('#shipping-email').addClass('is-invalid');
+            } else {
+                $('#shipping-email').removeClass('is-invalid');
             }
 
             const shippingMobile = $('#shipping-mobile').val().trim();
             if (shippingMobile && !/^\+?\d{10,15}$/.test(shippingMobile)) {
                 errors.push('Please enter a valid shipping mobile number.');
+                $('#shipping-mobile').addClass('is-invalid');
+            } else {
+                $('#shipping-mobile').removeClass('is-invalid');
             }
         }
 
         if (!$('input[name="payment"]:checked').length) {
             errors.push('Please select a payment method.');
+            $('input[name="payment"]').closest('.form-group').addClass('is-invalid');
+        } else {
+            $('input[name="payment"]').closest('.form-group').removeClass('is-invalid');
         }
 
         return errors;
@@ -462,6 +522,9 @@
                 768: { items: 4 },
                 992: { items: 5 },
                 1200: { items: 6 }
+            },
+            onInitialized: function () {
+                $('.vendor-carousel').attr('role', 'region').attr('aria-label', 'Vendor Carousel');
             }
         });
 
@@ -480,6 +543,7 @@
             const product = products.find(p => p.id === productId);
             if (!product) {
                 console.error('Product not found:', productId);
+                alert('Product not found. Please try again.');
                 return;
             }
 
@@ -560,10 +624,10 @@
                     zip: sanitizeInput($('#shipping-zip').val())
                 } : null,
                 items: cart,
-                subtotal: parseFloat($('#order-subtotal').text().replace(CONFIG.CURRENCY, '')),
-                shipping: parseFloat($('#order-shipping').text().replace(CONFIG.CURRENCY, '')),
-                couponDiscount: parseFloat($('#cart-discount').text().replace(CONFIG.CURRENCY, '')),
-                total: parseFloat($('#order-total').text().replace(CONFIG.CURRENCY, '')),
+                subtotal: parseFloat($('#order-subtotal').text().replace(/[^\d.]/g, '')),
+                shipping: parseFloat($('#order-shipping').text().replace(/[^\d.]/g, '')),
+                couponDiscount: parseFloat($('#cart-discount').text().replace(/[^\d.]/g, '')),
+                total: parseFloat($('#order-total').text().replace(/[^\d.]/g, '')),
                 paymentMethod: $('input[name="payment"]:checked').val()
             };
 
@@ -573,11 +637,18 @@
             alert(`Order placed successfully!\n\nOrder Details:\n` +
                 `Name: ${orderDetails.billing.firstName} ${orderDetails.billing.lastName}\n` +
                 `Email: ${orderDetails.billing.email}\n` +
-                `Total: ${CONFIG.CURRENCY}${orderDetails.total.toFixed(2)}\n` +
+                `Total: ${formatCurrency(orderDetails.total)}\n` +
                 `Payment: ${orderDetails.paymentMethod}\n` +
                 'Thank you for shopping with us!');
 
             window.location.href = 'index.html';
+        });
+
+        // Sync cart badge across tabs
+        $(window).on('storage', (e) => {
+            if (e.originalEvent.key === 'cart') {
+                updateCartBadge();
+            }
         });
 
         updateCartBadge();
