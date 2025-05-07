@@ -9720,3 +9720,8 @@ a.text-dark:hover, a.text-dark:focus {
   opacity: 1;
   visibility: visible;
 }
+
+
+#products img {
+  loading: auto !important;
+}

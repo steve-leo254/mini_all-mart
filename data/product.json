@@ -1,0 +1,83 @@
+[
+    {
+        "id": 1,
+        "name": "Nikon Camera",
+        "price": 25000,
+        "image": "img/product-1.jpg",
+        "rating": 5,
+        "category": "devices",
+        "description": "A comfortable camera for every shot."
+    },
+    {
+        "id": 2,
+        "name": "Blue Jacket",
+        "price": 1500,
+        "image": "img/product-2.jpg",
+        "rating": 4.5,
+        "category": "jackets",
+        "description": "Stylish denim jacket for a trendy look."
+    },
+    {
+        "id": 3,
+        "name": "Stand Lamp",
+        "price": 1200,
+        "image": "img/product-3.jpg",
+        "rating": 3.5,
+        "category": "accessories",
+        "description": "Lighten your world."
+    },
+    {
+        "id": 4,
+        "name": "Black Sneakers",
+        "price": 2500,
+        "image": "img/product-4.jpg",
+        "rating": 2,
+        "category": "shoes",
+        "description": "Elegant sneakers for formal occasions."
+    },
+    {
+        "id": 5,
+        "name": "Drone",
+        "price": 100000,
+        "image": "img/product-5.jpg",
+        "rating": 5,
+        "category": "devices",
+        "description": "Aero-stylish drone for stunning photos."
+    },
+    {
+        "id": 6,
+        "name": "Smart Watch",
+        "price": 3095,
+        "image": "img/product-6.jpg",
+        "rating": 4.5,
+        "category": "devices",
+        "description": "Track every second with style."
+    },
+    {
+        "id": 7,
+        "name": "Formal Shirt",
+        "price": 3704,
+        "image": "img/product-7.jpg",
+        "rating": 3.5,
+        "category": "shirts",
+        "description": "Crisp shirt for professional settings."
+    },
+    {
+        "id": 8,
+        "name": "Beauty Cream",
+        "price": 569,
+        "image": "img/product-8.jpg",
+        "rating": 2,
+        "category": "accessories",
+        "description": "Smoothens and protects your skin."
+    },
+    {
+        "id": 9,
+        "name": "Chinos",
+        "price": 1444,
+        "image": "img/product-9.jpg",
+        "rating": 2,
+        "category": "accessories",
+        "description": "Versatile chinos for a comfy seat."
+    }
+]
