@@ -10,7 +10,7 @@
     <meta property="og:description" content="Discover a wide range of products at Mini All Mart, from devices to accessories.">
     <meta property="og:image" content="{{ url_for('static', filename='img/iconsupr.png') }}">
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <meta name="csrf-token" content="{{ csrf_token }}">
     <title>Mini All Mart - Shop</title>
     <link rel="icon" href="{{ url_for('static', filename='img/iconsupr.png') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -75,7 +75,7 @@
             <div class="col-lg-4 col-8 text-left d-none d-lg-block">
                 <form action="{{ url_for('shop') }}" method="GET" role="search">
                     <div class="input-group">
-                        <input type="search" class="form-control" placeholder="Search for products" name="search" aria-label="Search products" value="{{ search or '' }}">
+                        <input type="search" class="form-control" placeholder="Search for products" name="search" aria-label="Search products" value="{{ request.args.get('search', '') }}">
                         <button class="input-group-text bg-transparent text-primary" type="submit" aria-label="Search">
                             <i class="fa fa-search"></i>
                         </button>
@@ -92,7 +92,7 @@
             <div class="col-12 collapse d-lg-none" id="mobile-search">
                 <form action="{{ url_for('shop') }}" method="GET" role="search" class="mt-2">
                     <div class="input-group">
-                        <input type="search" class="form-control" placeholder="Search for products" name="search" aria-label="Search products" value="{{ search or '' }}">
+                        <input type="search" class="form-control" placeholder="Search for products" name="search" aria-label="Search products" value="{{ request.args.get('search', '') }}">
                         <button class="input-group-text bg-transparent text-primary" type="submit" aria-label="Search">
                             <i class="fa fa-search"></i>
                         </button>
@@ -249,6 +249,37 @@
                             <div class="col-12 text-center" id="loading">No products found.</div>
                         {% endif %}
                     </div>
+                    <div class="col-12">
+                        <nav aria-label="Page navigation">
+                            <ul class="pagination justify-content-center">
+                                {% if pagination.has_prev %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('shop', page=pagination.prev_num, category=request.args.get('category'), price=request.args.get('price'), sort=request.args.get('sort'), search=request.args.get('search')) }}" aria-label="Previous">
+                                        <span aria-hidden="true">&laquo;</span>
+                                    </a>
+                                </li>
+                                {% endif %}
+                                {% for page_num in pagination.iter_pages() %}
+                                    {% if page_num %}
+                                        {% if page_num == pagination.page %}
+                                        <li class="page-item active"><a class="page-link" href="#">{{ page_num }}</a></li>
+                                        {% else %}
+                                        <li class="page-item"><a class="page-link" href="{{ url_for('shop', page=page_num, category=request.args.get('category'), price=request.args.get('price'), sort=request.args.get('sort'), search=request.args.get('search')) }}">{{ page_num }}</a></li>
+                                        {% endif %}
+                                    {% else %}
+                                        <li class="page-item disabled"><span class="page-link">...</span></li>
+                                    {% endif %}
+                                {% endfor %}
+                                {% if pagination.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('shop', page=pagination.next_num, category=request.args.get('category'), price=request.args.get('price'), sort=request.args.get('sort'), search=request.args.get('search')) }}" aria-label="Next">
+                                        <span aria-hidden="true">&raquo;</span>
+                                    </a>
+                                </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                    </div>
                 </div>
             </div>
         </div>
@@ -324,5 +355,31 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-easing/1.4.1/jquery.easing.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/OwlCarousel2/2.3.4/owl.carousel.min.js"></script>
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script>
+        $(document).ready(function() {
+            $('[data-action="add-to-cart"]').click(function(e) {
+                e.preventDefault();
+                const productId = $(this).data('product-id');
+                $.ajax({
+                    url: '{{ url_for("cart") }}',
+                    method: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({
+                        action: 'add',
+                        product_id: productId,
+                        quantity: 1,
+                        csrf_token: '{{ csrf_token }}'
+                    }),
+                    success: function(response) {
+                        alert(response.message);
+                        $('.badge.text-secondary').text(response.cart.length);
+                    },
+                    error: function(xhr) {
+                        alert(xhr.responseJSON.error || 'Error adding to cart');
+                    }
+                });
+            });
+        });
+    </script>
 </body>
 </html>
