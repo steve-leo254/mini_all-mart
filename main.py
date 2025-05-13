@@ -40,21 +40,28 @@ def set_csrf_token():
     if 'csrf_token' not in session:
         session['csrf_token'] = generate_csrf()
 
+
 @app.route('/')
 def index():
-    """Render the homepage with featured and recent products."""
     try:
         featured_products = Products.query.limit(8).all()
         recent_products = Products.query.order_by(Products.product_id.desc()).limit(8).all()
+        # Add categories query (example - adjust based on your data model)
+        categories = db.session.query(Products.category).distinct().all()
+        categories = [c[0] for c in categories]  # Extract category strings
+        
         return render_template(
             "index.html",
             featured_products=featured_products,
             recent_products=recent_products,
+            categories=categories,  # Add this line
             csrf_token=session.get('csrf_token')
         )
     except Exception as e:
         logger.error(f"Error rendering index: {str(e)}")
         return render_template("error.html", error="Failed to load homepage"), 500
+    
+
 
 @app.route('/products', methods=['GET'])
 def get_products():
